@@ -1,3 +1,5 @@
+
+
 #include <SD.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -32,6 +34,8 @@ Anode - pin 9
 */
 int led=9;
 
+long seconds = millis()/1000;
+
 void setup()
 
 {
@@ -39,7 +43,7 @@ void setup()
   Serial.begin(9600); //start serial communication at 9600
 
 Serial.println("Initializing the SD card...");
-if (!SD.begin(10)) // if statement to test for SD initialization
+if (!SD.begin(53)) // if statement to test for SD initialization
 {
   Serial.println("SD Initialization failed!!!");
   return;
@@ -110,7 +114,7 @@ if (dataFile)
     temperature = bmp.getTemperature();
     Serial.print("Temperature: ");
     Serial.print(temperature);
-    Serial.println(" C");
+    Serial.println(" F");
     
     /* Calculating altitude with reasonable accuracy requires pressure    *
      * sea level pressure for your position at the moment the data is     *
@@ -143,13 +147,13 @@ if (dataFile)
     
   
 String dataString = String(event.acceleration.x)+ ", " + String(event.acceleration.y)+ ", " + String(event.acceleration.z);
-dataFile.print(millis());
+dataFile.print(millis()/1000);
 dataFile.print(",");
 dataFile.print(dataString);
 dataFile.print(",");
 dataFile.print(pressure);
 dataFile.print(",");
-dataFile.print(temperature);
+dataFile.print(temperature*1.8+32);
 dataFile.print(",");
 dataFile.println(altitude);
 
@@ -159,9 +163,9 @@ else
 {
 Serial.println("Error in opening file");
 }
-delay(1000);
+delay(2000);
 digitalWrite (led, HIGH);
-  delay(1000);
+  delay(2000);
   digitalWrite (led, LOW);
-  delay (1000);
+  delay (2000);
 }
