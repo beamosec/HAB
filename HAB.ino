@@ -1,6 +1,7 @@
 #include <SD.h>
 #include <Wire.h>
 #include <SPI.h>
+#include <DHT.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 #include <Adafruit_BMP183.h>
@@ -21,16 +22,19 @@ File dataFile;
 
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
-#define BMP183_SCK  8//BMP183 commmunications pins: was CLK
-#define BMP183_SDO  7
-#define BMP183_SDI  6
-#define BMP183_CS   5
+#define BMP183_SCK  13//BMP183 commmunications pins: was CLK
+#define BMP183_SDO  12
+#define BMP183_SDI  11
+#define BMP183_CS   10
+#define DHTPIN 2
+#define DHTTYPE DHT22
 Adafruit_BMP183 bmp = Adafruit_BMP183(BMP183_SCK, BMP183_SDO, BMP183_SDI, BMP183_CS);
 
 /*Blink-LED commmunications pins:
   Anode - pin 9
 */
 
+DHT dht(DHTPIN, DHTTYPE);
 int led = 9;
 
 void setup()
@@ -69,6 +73,12 @@ void setup()
     return;
   }
   Serial.println("Pressure/Temperature Sensor detected ");
+
+  Serial.println("Initializing Humitidity/Temp Sensor...");
+  dht.begin();
+
+  Serial.println("");
+  Serial.println("");
   
   pinMode(led, OUTPUT);
 }
@@ -92,33 +102,38 @@ void loop() {
     /* Display atmospheric pressue in Pascals */
     float pressure;
     pressure = bmp.getPressure();
-    Serial.print("Pressure:    ");
+    Serial.print("Pressure: ");
     Serial.print(pressure);
     Serial.print(" Pascals / ");
     Serial.print(bmp.getPressure() / 100);
     Serial.println(" millibar (hPa)");
 
-    /* First we get the current temperature from the BMP085 */
-    float temperature;
-    temperature = bmp.getTemperature();
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.println(" F");
-
     // For SeaLevelPressure, we are currently using generic value of 1013.25 mbar
     // TODO check local sea level pressure and convert it into code
     
-    float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA; // should be ~1000
+    float seaLevelPressure = 1022.9; // should be ~1000
     Serial.print("Sea level pressure: ");
-    Serial.print(SENSORS_PRESSURE_SEALEVELHPA);
+    Serial.print(seaLevelPressure);
     Serial.println(" millibar/hPa");
 
     float altitude;
     altitude = bmp.getAltitude(seaLevelPressure);
     Serial.print("Altitude: ");
-    Serial.print(altitude);
-    Serial.println(" m");
+    Serial.print(altitude * 3.28084);
+    Serial.println(" ft");
+
+    float humidity = dht.readHumidity();
+    float tempaf = dht.readTemperature(true);
+    Serial.print("Humidity: ");
+    Serial.print(humidity);
+    Serial.print(" humidities");
     Serial.println("");
+    Serial.print("Tempature: ");
+    Serial.print(tempaf);
+    Serial.print(" f");
+    Serial.println("");
+    Serial.println("");
+  
     
     String dataString = String(event.acceleration.x) + ", " + String(event.acceleration.y) + ", " + String(event.acceleration.z);
     
@@ -128,9 +143,11 @@ void loop() {
     dataFile.print(",");
     dataFile.print(pressure);
     dataFile.print(",");
-    dataFile.print(temperature * 1.8 + 32);
+    dataFile.println(altitude * 3.28084);
     dataFile.print(",");
-    dataFile.println(altitude);
+    dataFile.print(humidity);
+    dataFile.print(",");
+    dataFile.print(tempaf);
 
     dataFile.close();
     
