@@ -6,11 +6,23 @@
 #include <Adafruit_ADXL345_U.h>
 #include <Adafruit_BMP183.h>
 
+/*
+  SD card commmunications pins:
+  CS - pin 10 uno 53 mega
+  DI - pin 11 uno 51 mega
+  DO - pin 12 uno 50 mega
+  CLK- pin 13 uno 52 mega
+*/
 File dataFile;
+
+/*ADXL345commmunications pins:
+  A5 - SCL
+  A4 - SDA
+*/
 
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
-#define BMP183_SCK  13 //BMP183 commmunications pins: was CLK
+#define BMP183_SCK  13//BMP183 commmunications pins: was CLK
 #define BMP183_SDO  12
 #define BMP183_SDI  11
 #define BMP183_CS   10
@@ -18,11 +30,17 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 #define DHTTYPE DHT22
 Adafruit_BMP183 bmp = Adafruit_BMP183(BMP183_SCK, BMP183_SDO, BMP183_SDI, BMP183_CS);
 
+/*Blink-LED commmunications pins:
+  Anode - pin 9
+*/
+
 DHT dht(DHTPIN, DHTTYPE);
 int led = 9;
 
 void setup()
+
 {
+
   Serial.begin(9600); //start serial communication at 9600
 
   Serial.println("Initializing the SD card...");
@@ -31,15 +49,12 @@ void setup()
     Serial.println("SD Initialization failed!");
     return;
   }
-  Serial.println("SD Initialization complete.");
+  Serial.println("SD Initialization compleate");
 
 
-  Serial.println("Initializing Accelerometer...");
-  if (!accel.begin())
-  {
-    Serial.println("No Accelerometer detected!");
-    return;
-  }
+  
+
+  accel.begin();
   /* Set the range to whatever is appropriate for your project */
   accel.setRange(ADXL345_RANGE_16_G);
   // displaySetRange(ADXL345_RANGE_8_G);
@@ -58,7 +73,8 @@ void setup()
 
   Serial.println("Initializing Humitidity/Temp Sensor...");
   dht.begin();
-  Serial.println("Humidity/Temp sensor detected!");
+
+  Serial.println("");
   Serial.println("");
   
   pinMode(led, OUTPUT);
@@ -74,6 +90,7 @@ void loop() {
     /* Get a new sensor event */
     sensors_event_t event;
     accel.getEvent(&event);
+    /* Display the results (acceleration is measured in m/s^2) */
     Serial.print("X: "); Serial.print(event.acceleration.x); Serial.print("  ");
     Serial.print("Y: "); Serial.print(event.acceleration.y); Serial.print("  ");
     Serial.print("Z: "); Serial.print(event.acceleration.z); Serial.print("  "); Serial.println("m/s^2 ");
@@ -88,8 +105,10 @@ void loop() {
     Serial.print(bmp.getPressure() / 100);
     Serial.println(" millibar (hPa)");
 
-    // TODO check local sea level pressure for accurate altitude readings
-    float seaLevelPressure = 1022.9;
+    // For SeaLevelPressure, we are currently using generic value of 1013.25 mbar
+    // TODO check local sea level pressure and convert it into code
+    
+    float seaLevelPressure = 1022.9; // should be ~1000
     Serial.print("Sea level pressure: ");
     Serial.print(seaLevelPressure);
     Serial.println(" millibar/hPa");
@@ -101,20 +120,15 @@ void loop() {
     Serial.println(" ft");
 
     float humidity = dht.readHumidity();
-    float temperature = dht.readTemperature(true);
+    float tempaf = dht.readTemperature(true);
     Serial.print("Humidity: ");
     Serial.print(humidity);
     Serial.print(" humidities");
     Serial.println("");
     Serial.print("Tempature: ");
-    Serial.print(temperature);
-    Serial.print("  °f");
+    Serial.print(tempaf);
+    Serial.print(" f");
     Serial.println("");
-
-    float heatindex = dht.computeHeatIndex(temperature, humidity);
-    Serial.print("Heat index: ");
-    Serial.print(heatindex);
-    Serial.println(" °f");
     Serial.println("");
   
     
@@ -122,7 +136,7 @@ void loop() {
     
     dataFile.print(millis() / 1000);
     dataFile.print(",");
-    dataFile.print(dataString); //x,y,z
+    dataFile.print(dataString);
     dataFile.print(",");
     dataFile.print(pressure);
     dataFile.print(",");
@@ -130,9 +144,7 @@ void loop() {
     dataFile.print(",");
     dataFile.print(humidity);
     dataFile.print(",");
-    dataFile.print(temperature);
-    dataFile.print(",");
-    dataFile.print(heatindex);
+    dataFile.print(tempaf);
 
     dataFile.close();
     
