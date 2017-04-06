@@ -68,6 +68,15 @@ void setup() {
     Serial.println("No camera found?");
     return;
   }
+  // Print out the camera version information (optional)
+  char *reply = cam.getVersion();
+  if (reply == 0) {
+    Serial.print("Failed to get version");
+  } else {
+    Serial.println("-----------------");
+    Serial.print(reply);
+    Serial.println("-----------------");
+  }
 
   cam.setImageSize(VC0706_640x480);
 
