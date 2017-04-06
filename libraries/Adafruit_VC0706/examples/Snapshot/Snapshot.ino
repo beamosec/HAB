@@ -58,9 +58,9 @@
 // Using SoftwareSerial (Arduino 1.0+) or NewSoftSerial (Arduino 0023 & prior):
 #if ARDUINO >= 100
 // On Uno: camera TX connected to pin 2, camera RX to pin 3:
-SoftwareSerial cameraconnection = SoftwareSerial(2, 3);
+//SoftwareSerial cameraconnection = SoftwareSerial(2, 3);
 // On Mega: camera TX connected to pin 69 (A15), camera RX to pin 3:
-//SoftwareSerial cameraconnection = SoftwareSerial(69, 3);
+SoftwareSerial cameraconnection = SoftwareSerial(69, 3);
 #else
 NewSoftSerial cameraconnection = NewSoftSerial(2, 3);
 #endif
@@ -73,16 +73,7 @@ Adafruit_VC0706 cam = Adafruit_VC0706(&cameraconnection);
 
 void setup() {
 
-  // When using hardware SPI, the SS pin MUST be set to an
-  // output (even if not connected or used).  If left as a
-  // floating input w/SPI on, this can cause lockuppage.
-#if !defined(SOFTWARE_SPI)
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  if(chipSelect != 53) pinMode(53, OUTPUT); // SS on Mega
-#else
-  if(chipSelect != 10) pinMode(10, OUTPUT); // SS on Uno, etc.
-#endif
-#endif
+
 
   Serial.begin(9600);
   Serial.println("VC0706 Camera snapshot test");

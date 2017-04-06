@@ -5,6 +5,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 #include <Adafruit_BMP183.h>
+#include <Adafruit_VC0706.h>
 
 #include <SoftwareSerial.h>
 
@@ -23,8 +24,33 @@ Adafruit_BMP183 bmp = Adafruit_BMP183(BMP183_SCK, BMP183_SDO, BMP183_SDI, BMP183
 DHT dht(DHTPIN, DHTTYPE);
 int led = 9;
 
-void setup()
-{
+#define chipSelect 53
+
+// Using SoftwareSerial (Arduino 1.0+) or NewSoftSerial (Arduino 0023 & prior):
+#if ARDUINO >= 100
+// On Uno: camera TX connected to pin 2, camera RX to pin 3:
+//SoftwareSerial cameraconnection = SoftwareSerial(2, 3);
+// On Mega: camera TX connected to pin 69 (A15), camera RX to pin 3:
+SoftwareSerial cameraconnection = SoftwareSerial(69, 3);
+#else
+NewSoftSerial cameraconnection = NewSoftSerial(2, 3);
+#endif
+
+Adafruit_VC0706 cam = Adafruit_VC0706(&cameraconnection);
+
+void setup() {
+
+  // When using hardware SPI, the SS pin MUST be set to an
+  // output (even if not connected or used).  If left as a
+  // floating input w/SPI on, this can cause lockuppage.
+#if !defined(SOFTWARE_SPI)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  if (chipSelect != 53) pinMode(53, OUTPUT); // SS on Mega
+#else
+  if (chipSelect != 10) pinMode(10, OUTPUT); // SS on Uno, etc.
+#endif
+#endif
+
   Serial.begin(9600); //start serial communication at 9600
 
   Serial.println("Initializing the SD card...");
@@ -35,6 +61,15 @@ void setup()
   }
   Serial.println("SD Initialization complete.");
 
+  // Try to locate the camera
+  if (cam.begin()) {
+    Serial.println("Camera Found:");
+  } else {
+    Serial.println("No camera found?");
+    return;
+  }
+
+  cam.setImageSize(VC0706_640x480);
 
   Serial.println("Initializing Accelerometer...");
   if (!accel.begin())
@@ -62,14 +97,31 @@ void setup()
   dht.begin();
   Serial.println("Humidity/Temp sensor detected!");
   Serial.println("");
-  
+
   pinMode(led, OUTPUT);
 
 }
 
 // Loop to record data to a .csv file every 6 seconds. Program by Nick, Cedric, and Alex
 void loop() {
-  
+
+if (! cam.takePicture())
+      Serial.println("Failed to snap!");
+    else
+      Serial.println("Picture taken!");
+
+    // Create an image with the name IMAGExx.JPG
+    char filename[13];
+    strcpy(filename, "IMAGE00.JPG");
+    for (int i = 0; i < 500; i++) {
+      filename[5] = '0' + i / 10;
+      filename[6] = '0' + i % 10;
+      // create if does not exist, do not open existing, write, sync after write
+      if (! SD.exists(filename)) {
+        break;
+      }
+    }
+
   dataFile = SD.open("HawkData.csv", FILE_WRITE); //open the file to write to it
 
   if (dataFile) {
@@ -111,18 +163,42 @@ void loop() {
     Serial.println("");
     Serial.print("Tempature: ");
     Serial.print(temperature);
-    Serial.print("  °f");
+    Serial.print(" *f");
     Serial.println("");
 
     float heatindex = dht.computeHeatIndex(temperature, humidity);
     Serial.print("Heat index: ");
     Serial.print(heatindex);
-    Serial.println(" °f");
+    Serial.println(" *f");
     Serial.println("");
-  
-    
+
+    uint16_t jpglen = cam.frameLength();
+    Serial.print("Storing ");
+    Serial.print(jpglen, DEC);
+    Serial.print(" byte image.");
+
+    int32_t time = millis();
+    pinMode(8, OUTPUT);
+    // Read all the data up to # bytes!
+    byte wCount = 0; // For counting # of writes
+    while (jpglen > 0) {
+      // read 32 bytes at a time;
+      uint8_t *buffer;
+      uint8_t bytesToRead = min(32, jpglen); // change 32 to 64 for a speedup but may not work with all setups!
+      buffer = cam.readPicture(bytesToRead);
+      dataFile.write(buffer, bytesToRead);
+      if (++wCount >= 64) { // Every 2K, give a little feedback so it doesn't appear locked up
+        Serial.print('.');
+        wCount = 0;
+      }
+      //Serial.print("Read ");  Serial.print(bytesToRead, DEC); Serial.println(" bytes");
+      jpglen -= bytesToRead;
+    }
+
+    Serial.println("");
+
     String dataString = String(event.acceleration.x) + ", " + String(event.acceleration.y) + ", " + String(event.acceleration.z);
-    
+
     dataFile.print(millis() / 1000);
     dataFile.print(",");
     dataFile.print(dataString); //x,y,z
@@ -138,16 +214,16 @@ void loop() {
     dataFile.print(heatindex);
 
     dataFile.close();
-    
+
   } else {
-    
+
     Serial.println("Error in opening file");
-    
-    }
-    
-  delay(2000);
+
+  }
+
+  delay(1000);
   digitalWrite (led, HIGH);
-  delay(2000);
+  delay(1000);
   digitalWrite (led, LOW);
-  delay (2000);
-} // Delay for next capture currently 6000 miliseconds, can be changed.
+  delay (1000);
+} // Delay for next capture currently 3000 miliseconds, can be changed.
