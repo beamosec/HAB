@@ -153,7 +153,7 @@ void loop() {
     Serial.println(" millibar (hPa)");
 
     // TODO check local sea level pressure for accurate altitude readings
-    float seaLevelPressure = 1009.7;
+    float seaLevelPressure = 1022.9;
     Serial.print("Sea level pressure: ");
     Serial.print(seaLevelPressure);
     Serial.println(" millibar/hPa");
@@ -208,6 +208,7 @@ void loop() {
     dataFile.print(heatindex);
 
     dataFile.close();
+    
 
     File imgFile = SD.open(filename, FILE_WRITE);
 
