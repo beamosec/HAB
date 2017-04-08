@@ -133,7 +133,6 @@ void loop() {
     Serial.print("Y: "); Serial.print(event.acceleration.y); Serial.print("  ");
     Serial.print("Z: "); Serial.print(event.acceleration.z); Serial.print("  "); Serial.println("m/s^2 ");
 
-
     /* Display atmospheric pressue in Pascals */
     float pressure;
     pressure = bmp.getPressure();
@@ -155,13 +154,19 @@ void loop() {
     Serial.print(altitude * 3.28084);
     Serial.println(" ft");
 
+    float insideTemperature;
+    insideTemperature = bmp.getTemperature();
+    Serial.print("Inside Temperature: ");
+    Serial.print(insideTemperature * 1.8 + 32);
+    Serial.println(" f");
+
     float humidity = dht.readHumidity();
     float temperature = dht.readTemperature(true);
     Serial.print("Humidity: ");
     Serial.print(humidity);
     Serial.print(" humidities");
     Serial.println("");
-    Serial.print("Tempature: ");
+    Serial.print("Outside Temperature: ");
     Serial.print(temperature);
     Serial.print(" *f");
     Serial.println("");
@@ -184,6 +189,8 @@ void loop() {
     dataFile.print(",");
     dataFile.println(altitude * 3.28084);
     dataFile.print(",");
+    dataFile.print(insideTemperature);
+    dataFile.print(",");
     dataFile.print(humidity);
     dataFile.print(",");
     dataFile.print(temperature);
@@ -192,7 +199,7 @@ void loop() {
 
     dataFile.close();
 
-File imgFile = SD.open(filename, FILE_WRITE);
+    File imgFile = SD.open(filename, FILE_WRITE);
 
     // Get the size of the image (frame) taken
     uint16_t jpglen = cam.frameLength();
