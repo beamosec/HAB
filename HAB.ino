@@ -13,10 +13,10 @@ File dataFile;
 
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
-#define BMP183_SCK  13 //BMP183 commmunications pins: was CLK
-#define BMP183_SDO  12
-#define BMP183_SDI  11
-#define BMP183_CS   10
+#define BMP183_SCK  4 //BMP183 commmunications pins: was CLK
+#define BMP183_SDO  5
+#define BMP183_SDI  6
+#define BMP183_CS   7
 #define DHTPIN 2
 #define DHTTYPE DHT22
 Adafruit_BMP183 bmp = Adafruit_BMP183(BMP183_SCK, BMP183_SDO, BMP183_SDI, BMP183_CS);
@@ -117,6 +117,7 @@ void loop() {
   if (! cam.takePicture())
     Serial.println("Failed to snap!");
   else
+    Serial.println("");
     Serial.println("Picture taken!");
 
   // Create an image with the name IMAGExx.JPG
@@ -152,7 +153,7 @@ void loop() {
     Serial.println(" millibar (hPa)");
 
     // TODO check local sea level pressure for accurate altitude readings
-    float seaLevelPressure = 1022.9;
+    float seaLevelPressure = 1009.7;
     Serial.print("Sea level pressure: ");
     Serial.print(seaLevelPressure);
     Serial.println(" millibar/hPa");
@@ -234,6 +235,7 @@ void loop() {
       jpglen -= bytesToRead;
     }
     imgFile.close();
+    Serial.println("");
 
   } else {
 
